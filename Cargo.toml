@@ -1,9 +1,12 @@
 [package]
-name = "token-derive"
+name = "struct-arithmetic"
+description = "Provides a Trait to derive basic arithmetic operations for your structs."
+repository = "https://github.com/hubble-markets/struct-arithmetic"
+license = "MIT"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
 
 [dependencies]
 syn = { version = "1.0", features = ["full", "extra-traits"] }
