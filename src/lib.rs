@@ -6,7 +6,7 @@ use syn::{
     Field, Fields, Ident, Path, Type, TypePath,
 };
 
-#[proc_macro_derive(StructArithmetic)]
+#[proc_macro_derive(StructArithmetic, attributes(helper))]
 pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
     let name = input.ident;
@@ -39,7 +39,10 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     // println!("Type {:?}", field_type);
 
     let factor = Ident::new("factor", Span::call_site());
-    let factor_type = Ident::new(&field_type, Span::call_site());
+    let numerator = Ident::new("numerator", Span::call_site());
+    let denominator = Ident::new("denominator", Span::call_site());
+    let fields_type = Ident::new(&field_type, Span::call_site());
+    // let token_type = Ident::new("token", Span::call_site());
 
     let addition = generate_add(&fields);
     let addition_assign = generate_add_assign(&fields);
@@ -49,56 +52,141 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     let division = generate_div(&fields);
     let division_scalar = generate_div_scalar(&fields, factor.clone());
     let multiplication_scalar = generate_mul_scalar(&fields, factor.clone());
+    let multiplication_fraction =
+        generate_mul_fraction(&fields, numerator, denominator, fields_type.clone());
+
+    let (new_constructor_args, new_constructor_struct) = generate_new(&fields, fields_type.clone());
+    let is_zero = generate_is_zero(&fields);
+    // let token_amount = generate_token_amount(&fields);
 
     let modified = quote! {
         impl #name {
-            pub fn add(&self, other: #name) -> #name {
+            pub fn new(#(#new_constructor_args)*) -> #name {
+                #name {
+                #(#new_constructor_struct)*
+                }
+            }
+
+            pub fn is_zero(&self) -> bool {
+                #(#is_zero)*
+            }
+
+            pub fn add(&self, other: &#name) -> #name {
                 #name {
                 #(#addition)*
                 }
             }
 
-            pub fn add_assign(&mut self, other: #name) {
+            pub fn add_assign(&mut self, other: &#name) {
                 #(#addition_assign)*
             }
 
-            pub fn sub(&self, other: #name) -> #name {
+            pub fn sub(&self, other: &#name) -> #name {
                 #name {
                 #(#subtraction)*
                 }
             }
 
-            pub fn sub_assign(&mut self, other: #name) {
+            pub fn sub_assign(&mut self, other: &#name) {
                 #(#subtraction_assign)*
             }
 
-            pub fn mul(&self, other: #name) -> #name {
-                #name {
-                #(#multiplication)*
-                }
-            }
-
-            pub fn div(&self, other: #name) -> #name {
+            pub fn div(&self, other: &#name) -> #name {
                 #name {
                 #(#division)*
                 }
             }
 
-            pub fn div_scalar(&self, factor: #factor_type) -> #name {
+            pub fn div_scalar(&self, factor: #fields_type) -> #name {
                 #name {
                 #(#division_scalar)*
                 }
             }
 
-            pub fn mul_scalar(&self, factor: #factor_type) -> #name {
+            pub fn mul(&self, other: &#name) -> #name {
+                #name {
+                #(#multiplication)*
+                }
+            }
+
+            pub fn mul_scalar(&self, factor: #fields_type) -> #name {
                 #name {
                 #(#multiplication_scalar)*
                 }
             }
 
+            pub fn mul_fraction(&self, numerator: #fields_type, denominator: #fields_type) -> #name {
+                #name {
+                #(#multiplication_fraction)*
+                }
+            }
+
+            pub fn mul_bps(&self, factor: u16) -> #name {
+                self.mul_fraction(factor as #fields_type, 10_000)
+            }
+
+
+            pub fn mul_percent(&self, factor: u16) -> #name {
+                self.mul_fraction(factor as #fields_type, 100)
+            }
+
         }
     };
     TokenStream::from(modified)
+}
+
+// fn generate_token_amount(
+//     fields: &Punctuated<Field, Comma>,
+//     enum_type: Ident,
+// ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+//     let args_code = fields.iter().enumerate().map(move |(_i, field)| {
+//         let enum_variant = Ident::new(&stringify!(&field).to_uppercase(), Span::call_site());
+//         let field_ident = field.ident.as_ref().unwrap();
+//         quote! { enum_type::#enum_variant => self.#field_ident,  }
+//     });
+
+//     args_code
+// }
+
+fn generate_is_zero(
+    fields: &Punctuated<Field, Comma>,
+) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+    let args_code = fields.iter().enumerate().map(move |(i, field)| {
+        let field_ident = field.ident.as_ref().unwrap();
+        if i < fields.len() - 1 {
+            quote! { self.#field_ident == 0 && }
+        } else {
+            quote! { self.#field_ident == 0  }
+        }
+    });
+
+    args_code
+}
+
+fn generate_new(
+    fields: &Punctuated<Field, Comma>,
+    factor_type: Ident,
+) -> (
+    impl Iterator<Item = proc_macro2::TokenStream> + '_,
+    impl Iterator<Item = proc_macro2::TokenStream> + '_,
+) {
+    let args_code = fields.iter().enumerate().map(move |(i, field)| {
+        let field_ident = field.ident.as_ref().unwrap();
+        if i < fields.len() - 1 {
+            quote! { #field_ident: #factor_type, }
+        } else {
+            quote! { #field_ident: #factor_type }
+        }
+    });
+    let struct_code = fields.iter().enumerate().map(move |(i, field)| {
+        let field_ident = field.ident.as_ref().unwrap();
+        if i < fields.len() - 1 {
+            quote! { #field_ident, }
+        } else {
+            quote! { #field_ident }
+        }
+    });
+    (args_code, struct_code)
 }
 
 fn generate_add(
@@ -116,7 +204,7 @@ fn generate_add_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident = self.#field_ident.checked_sub(other.#field_ident).unwrap(); }
+        quote! { self.#field_ident = self.#field_ident.checked_add(other.#field_ident).unwrap(); }
     });
     code
 }
@@ -136,7 +224,7 @@ fn generate_sub_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident = self.#field_ident.checked_add(other.#field_ident).unwrap(); }
+        quote! { self.#field_ident = self.#field_ident.checked_sub(other.#field_ident).unwrap(); }
     });
     code
 }
@@ -183,20 +271,15 @@ fn generate_mul_scalar(
     code
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-
-        // let x = Fields [
-        //     Field {
-        //         attrs: [],
-        //         vis: Public(VisPublic { pub_token: Pub }),
-        //         ident: Some(Ident { ident: "sol", span: #0 bytes(91..94) }),
-        //         colon_token: Some(Colon),
-        //         ty: Path(TypePath { qself: None, path: Path { leading_colon: None, segments: [PathSegment { ident: Ident { ident: "u64", span: #0 bytes(96..99) }, arguments: None }] } }) }, Comma,
-        //     Field { attrs: [], vis: Public(VisPublic { pub_token: Pub }), ident: Some(Ident { ident: "eth", span: #0 bytes(109..112) }), colon_token: Some(Colon), ty: Path(TypePath { qself: None, path: Path { leading_colon: None, segments: [PathSegment { ident: Ident { ident: "u64", span: #0 bytes(114..117) }, arguments: None }] } }) }, Comma,
-        //     Field { attrs: [], vis: Public(VisPublic { pub_token: Pub }), ident: Some(Ident { ident: "btc", span: #0 bytes(127..130) }), colon_token: Some(Colon), ty: Path(TypePath { qself: None, path: Path { leading_colon: None, segments: [PathSegment { ident: Ident { ident: "u64", span: #0 bytes(132..135) }, arguments: None }] } }) }, Comma]
-    }
+fn generate_mul_fraction(
+    fields: &Punctuated<Field, Comma>,
+    numerator: Ident,
+    denominator: Ident,
+    fields_type: Ident,
+) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+    let code = fields.iter().map(move |field| {
+        let field_ident = field.ident.as_ref().unwrap();
+        quote! { #field_ident: ((self.#field_ident as u128) * (#numerator as u128) / (#denominator as u128)) as #fields_type, }
+    });
+    code
 }
