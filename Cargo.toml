@@ -1,9 +1,9 @@
 [package]
 name = "struct-arithmetic"
 description = "Provides a Trait to derive basic arithmetic operations for your structs."
-repository = "https://github.com/hubble-markets/struct-arithmetic"
+repository = "https://github.com/hubble-markets/struct-arithmetic-macros"
 license = "MIT"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 
 [features]
