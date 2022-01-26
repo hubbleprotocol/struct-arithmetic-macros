@@ -2,8 +2,10 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    self, parse_macro_input, punctuated::Punctuated, token::Comma, Data, DataStruct, DeriveInput,
-    Field, Fields, Ident, Path, Type, TypePath,
+    self, parse_macro_input,
+    punctuated::{Pair, Punctuated},
+    token::Comma,
+    Data, DataStruct, DeriveInput, Expr, Field, Fields, Ident, Path, Type, TypePath,
 };
 
 #[proc_macro_derive(StructArithmetic, attributes(helper))]
@@ -11,13 +13,25 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
     let name = input.ident;
 
-    let fields = match input.data {
+    let mut fields: Punctuated<Field, Comma> = match input.data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
             ..
         }) => fields.named,
         _ => panic!("Only structs with named fields can be annotated with ToUrl"),
     };
+    let (has_reserved, reserved_size) =
+        if fields.last().unwrap().ident.as_ref().unwrap() == "_reserved" {
+            match fields.pop().unwrap() {
+                Pair::Punctuated(field, _) => match field.ty {
+                    Type::Array(arr) => (true, Some(arr.len)),
+                    _ => panic!("Only arrays are accepted as _reserved"),
+                },
+                _ => panic!("END token not accepted as _reserved"),
+            }
+        } else {
+            (false, None)
+        };
 
     let field_type = match &fields.first().unwrap().ty {
         Type::Path(TypePath {
@@ -55,7 +69,8 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     let multiplication_fraction =
         generate_mul_fraction(&fields, numerator, denominator, fields_type.clone());
 
-    let (new_constructor_args, new_constructor_struct) = generate_new(&fields, fields_type.clone());
+    let (new_constructor_args, new_constructor_struct) =
+        generate_new(&fields, fields_type.clone(), has_reserved, reserved_size);
     let is_zero = generate_is_zero(&fields);
     // let token_amount = generate_token_amount(&fields);
 
@@ -72,9 +87,9 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
             }
 
             pub fn add(&self, other: &#name) -> Option<#name> {
-                Some(#name {
-                #(#addition)*
-                })
+                Some(#name::new(
+                    #(#addition)*
+                ))
             }
 
             pub fn add_assign(&mut self, other: &#name) -> Option<()> {
@@ -84,9 +99,9 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
             }
 
             pub fn sub(&self, other: &#name) -> Option<#name> {
-                Some(#name {
-                #(#subtraction)*
-                })
+                Some(#name::new(
+                    #(#subtraction)*
+                ))
             }
 
             pub fn sub_assign(&mut self, other: &#name) -> Option<()> {
@@ -96,33 +111,33 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
             }
 
             pub fn div(&self, other: &#name) -> Option<#name> {
-                Some(#name {
-                #(#division)*
-                })
+                Some(#name::new(
+                    #(#division)*
+                ))
             }
 
             pub fn div_scalar(&self, factor: #fields_type) -> Option<#name> {
-                Some(#name {
-                #(#division_scalar)*
-                })
+                Some(#name::new(
+                    #(#division_scalar)*
+                ))
             }
 
             pub fn mul(&self, other: &#name) -> Option<#name> {
-                Some(#name {
-                #(#multiplication)*
-                })
+                Some(#name::new(
+                    #(#multiplication)*
+                ))
             }
 
             pub fn mul_scalar(&self, factor: #fields_type) -> Option<#name> {
-                Some(#name {
-                #(#multiplication_scalar)*
-                })
+                Some(#name::new(
+                    #(#multiplication_scalar)*
+                ))
             }
 
             pub fn mul_fraction(&self, numerator: #fields_type, denominator: #fields_type) -> Option<#name> {
-                Some(#name {
-                #(#multiplication_fraction)*
-                })
+                Some(#name::new(
+                    #(#multiplication_fraction)*
+                ))
             }
 
             pub fn mul_bps(&self, factor: u16) -> Option<#name> {
@@ -170,6 +185,8 @@ fn generate_is_zero(
 fn generate_new(
     fields: &Punctuated<Field, Comma>,
     factor_type: Ident,
+    has_reserved: bool,
+    reserved_size: Option<Expr>,
 ) -> (
     impl Iterator<Item = proc_macro2::TokenStream> + '_,
     impl Iterator<Item = proc_macro2::TokenStream> + '_,
@@ -187,7 +204,10 @@ fn generate_new(
         if i < fields.len() - 1 {
             quote! { #field_ident, }
         } else {
-            quote! { #field_ident }
+            match has_reserved {
+                false => quote! { #field_ident },
+                true => quote! {#field_ident, _reserved: [0; #reserved_size]},
+            }
         }
     });
     (args_code, struct_code)
@@ -198,7 +218,7 @@ fn generate_add(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_add(other.#field_ident)?, }
+        quote! { self.#field_ident.checked_add(other.#field_ident)?, }
     });
     code
 }
@@ -218,7 +238,7 @@ fn generate_sub(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_sub(other.#field_ident)?, }
+        quote! { self.#field_ident.checked_sub(other.#field_ident)?, }
     });
     code
 }
@@ -238,7 +258,7 @@ fn generate_mul(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_mul(other.#field_ident)?, }
+        quote! { self.#field_ident.checked_mul(other.#field_ident)?, }
     });
     code
 }
@@ -248,7 +268,7 @@ fn generate_div(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_div(other.#field_ident)?, }
+        quote! { self.#field_ident.checked_div(other.#field_ident)?, }
     });
     code
 }
@@ -259,7 +279,7 @@ fn generate_div_scalar(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_div(#factor)?, }
+        quote! { self.#field_ident.checked_div(#factor)?, }
     });
     code
 }
@@ -270,7 +290,7 @@ fn generate_mul_scalar(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: self.#field_ident.checked_mul(#factor)?, }
+        quote! { self.#field_ident.checked_mul(#factor)?, }
     });
     code
 }
@@ -283,7 +303,7 @@ fn generate_mul_fraction(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { #field_ident: ((self.#field_ident as u128) * (#numerator as u128) / (#denominator as u128)) as #fields_type, }
+        quote! { ((self.#field_ident as u128) * (#numerator as u128) / (#denominator as u128)) as #fields_type, }
     });
     code
 }
