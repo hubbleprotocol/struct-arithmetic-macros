@@ -13,7 +13,7 @@ mod tests_simple {
     fn test_add() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.add(&Y);
+        let z = X.add(&Y).unwrap();
         assert_eq!(z.sol, 20);
         assert_eq!(z.eth, 40);
         assert_eq!(z.btc, 60);
@@ -34,7 +34,7 @@ mod tests_simple {
     fn test_sub() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.sub(&Y);
+        let z = X.sub(&Y).unwrap();
         assert_eq!(z.sol, 0);
         assert_eq!(z.eth, 0);
         assert_eq!(z.btc, 0);
@@ -55,7 +55,7 @@ mod tests_simple {
     fn test_mul() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.mul(&Y);
+        let z = X.mul(&Y).unwrap();
         assert_eq!(z.sol, 100);
         assert_eq!(z.eth, 400);
         assert_eq!(z.btc, 900);
@@ -65,7 +65,7 @@ mod tests_simple {
     fn test_mul_scalar() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.mul_scalar(2);
+        let z = X.mul_scalar(2).unwrap();
         assert_eq!(z.sol, 20);
         assert_eq!(z.eth, 40);
         assert_eq!(z.btc, 60);
@@ -75,7 +75,7 @@ mod tests_simple {
     fn test_div() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.div(&Y);
+        let z = X.div(&Y).unwrap();
         assert_eq!(z.sol, 1);
         assert_eq!(z.eth, 1);
         assert_eq!(z.btc, 1);
@@ -85,7 +85,7 @@ mod tests_simple {
     fn test_div_scalar() {
         let X: TokenMap = TokenMap::new(10, 20, 30);
         let Y: TokenMap = TokenMap::new(10, 20, 30);
-        let z = X.div_scalar(10);
+        let z = X.div_scalar(10).unwrap();
         assert_eq!(z.sol, 1);
         assert_eq!(z.eth, 2);
         assert_eq!(z.btc, 3);
