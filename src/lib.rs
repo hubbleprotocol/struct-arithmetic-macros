@@ -86,62 +86,66 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
                 #(#is_zero)*
             }
 
-            pub fn add(&self, other: &#name) -> #name {
-                #name::new(
+            pub fn add(&self, other: &#name) -> Option<#name> {
+                Some(#name::new(
                     #(#addition)*
-                )
+                ))
             }
 
-            pub fn add_assign(&mut self, other: &#name) {
+            pub fn add_assign(&mut self, other: &#name) -> Option<()> {
                 #(#addition_assign)*
+
+                Some(())
             }
 
-            pub fn sub(&self, other: &#name) -> #name {
-                #name::new(
+            pub fn sub(&self, other: &#name) -> Option<#name> {
+                Some(#name::new(
                     #(#subtraction)*
-                )
+                ))
             }
 
-            pub fn sub_assign(&mut self, other: &#name) {
+            pub fn sub_assign(&mut self, other: &#name) -> Option<()> {
                 #(#subtraction_assign)*
+
+                Some(())
             }
 
-            pub fn div(&self, other: &#name) -> #name {
-                #name::new(
+            pub fn div(&self, other: &#name) -> Option<#name> {
+                Some(#name::new(
                     #(#division)*
-                )
+                ))
             }
 
-            pub fn div_scalar(&self, factor: #fields_type) -> #name {
-                #name::new(
+            pub fn div_scalar(&self, factor: #fields_type) -> Option<#name> {
+                Some(#name::new(
                     #(#division_scalar)*
-                )
+                ))
             }
 
-            pub fn mul(&self, other: &#name) -> #name {
-                #name::new(
+            pub fn mul(&self, other: &#name) -> Option<#name> {
+                Some(#name::new(
                     #(#multiplication)*
-                )
+                ))
             }
 
-            pub fn mul_scalar(&self, factor: #fields_type) -> #name {
-                #name::new(
+            pub fn mul_scalar(&self, factor: #fields_type) -> Option<#name> {
+                Some(#name::new(
                     #(#multiplication_scalar)*
-                )
+                ))
             }
 
-            pub fn mul_fraction(&self, numerator: #fields_type, denominator: #fields_type) -> #name {
-                #name::new(
+            pub fn mul_fraction(&self, numerator: #fields_type, denominator: #fields_type) -> Option<#name> {
+                Some(#name::new(
                     #(#multiplication_fraction)*
-                )
+                ))
             }
 
-            pub fn mul_bps(&self, factor: u16) -> #name {
+            pub fn mul_bps(&self, factor: u16) -> Option<#name> {
                 self.mul_fraction(factor as #fields_type, 10_000)
             }
 
 
-            pub fn mul_percent(&self, factor: u16) -> #name {
+            pub fn mul_percent(&self, factor: u16) -> Option<#name> {
                 self.mul_fraction(factor as #fields_type, 100)
             }
 
@@ -214,7 +218,7 @@ fn generate_add(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_add(other.#field_ident).unwrap(), }
+        quote! { self.#field_ident.checked_add(other.#field_ident)?, }
     });
     code
 }
@@ -224,7 +228,7 @@ fn generate_add_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident = self.#field_ident.checked_add(other.#field_ident).unwrap(); }
+        quote! { self.#field_ident = self.#field_ident.checked_add(other.#field_ident)?; }
     });
     code
 }
@@ -234,7 +238,7 @@ fn generate_sub(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_sub(other.#field_ident).unwrap(), }
+        quote! { self.#field_ident.checked_sub(other.#field_ident)?, }
     });
     code
 }
@@ -244,7 +248,7 @@ fn generate_sub_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident = self.#field_ident.checked_sub(other.#field_ident).unwrap(); }
+        quote! { self.#field_ident = self.#field_ident.checked_sub(other.#field_ident)?; }
     });
     code
 }
@@ -254,7 +258,7 @@ fn generate_mul(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_mul(other.#field_ident).unwrap(), }
+        quote! { self.#field_ident.checked_mul(other.#field_ident)?, }
     });
     code
 }
@@ -264,7 +268,7 @@ fn generate_div(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_div(other.#field_ident).unwrap(), }
+        quote! { self.#field_ident.checked_div(other.#field_ident)?, }
     });
     code
 }
@@ -275,7 +279,7 @@ fn generate_div_scalar(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_div(#factor).unwrap(), }
+        quote! { self.#field_ident.checked_div(#factor)?, }
     });
     code
 }
@@ -286,7 +290,7 @@ fn generate_mul_scalar(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { self.#field_ident.checked_mul(#factor).unwrap(), }
+        quote! { self.#field_ident.checked_mul(#factor)?, }
     });
     code
 }
