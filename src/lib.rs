@@ -303,7 +303,7 @@ fn generate_mul_fraction(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        quote! { ((self.#field_ident as u128) * (#numerator as u128) / (#denominator as u128)) as #fields_type, }
+        quote! { ((self.#field_ident as u128).checked_mul(#numerator as u128)?.checked_div(#denominator as u128)?) as #fields_type, }
     });
     code
 }
