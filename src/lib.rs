@@ -539,7 +539,7 @@ fn generate_mul_fraction(
         }
         match &field.ty {
             Type::Array(_arr) => quote! { #field_ident, },
-            _ => quote! { ((self.#field_ident as u128).checked_mul(#numerator as u128)?.checked_div(#denominator as u128)?) as #fields_type, },
+            _ => quote! { ((self.#field_ident as u128).checked_mul(#numerator2 as u128)?.checked_div(#denominator2 as u128)?) as #fields_type, },
         }
     });
 
