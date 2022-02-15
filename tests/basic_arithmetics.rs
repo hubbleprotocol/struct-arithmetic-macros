@@ -69,6 +69,16 @@ mod tests_simple {
     }
 
     #[test]
+    fn test_mul_fraction() {
+        let X: TokenMap = TokenMap::new(10, 20, 30);
+        let Y: TokenMap = TokenMap::new(10, 20, 30);
+        let z = X.mul_fraction(1, 2).unwrap();
+        assert_eq!(z.sol, 5);
+        assert_eq!(z.eth, 10);
+        assert_eq!(z.btc, 15);
+    }
+
+    #[test]
     fn test_div() {
         let x: TokenMap = TokenMap::new(10, 20, 30);
         let y: TokenMap = TokenMap::new(10, 20, 30);

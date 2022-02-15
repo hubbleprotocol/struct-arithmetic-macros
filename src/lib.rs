@@ -528,7 +528,7 @@ fn generate_mul_fraction(
             quote! {
                 let mut #field_ident = [#field_type::default(); #field_size];
                 for i in 0..self.#field_ident.len() {
-                    #field_ident[i] = ((self.#field_ident[i] as u128) * (#numerator as u128) / (#denominator as u128)) as #field_type;
+                    #field_ident[i] = ((self.#field_ident[i] as u128).checked_mul(#numerator as u128)?.checked_div(#denominator as u128)?) as #field_type;
                 }
             }
         });
@@ -539,7 +539,7 @@ fn generate_mul_fraction(
         }
         match &field.ty {
             Type::Array(_arr) => quote! { #field_ident, },
-            _ => quote! { ((self.#field_ident as u128) * (#numerator2 as u128) / (#denominator2 as u128)) as #fields_type, },
+            _ => quote! { ((self.#field_ident as u128).checked_mul(#numerator as u128)?.checked_div(#denominator as u128)?) as #fields_type, },
         }
     });
 
