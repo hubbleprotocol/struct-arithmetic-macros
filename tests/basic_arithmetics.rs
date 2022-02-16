@@ -353,6 +353,7 @@ mod tests_multiple_scenarios {
         pub btc: u64,
         pub tk1: [u64; 2],
         pub _reserved: [u8; 128],
+        pub _reserved2: [u8; 256],
         pub tk2: [u128; 3],
     }
 
