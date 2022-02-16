@@ -10,6 +10,24 @@ mod tests_simple {
     }
 
     #[test]
+    fn test_is_zero_false() {
+        let x: TokenMap = TokenMap::new(10, 20, 30);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_partially_false() {
+        let x: TokenMap = TokenMap::new(10, 0, 0);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_true() {
+        let x: TokenMap = TokenMap::new(0, 0, 0);
+        assert_eq!(x.is_zero(), true);
+    }
+
+    #[test]
     fn test_add() {
         let x: TokenMap = TokenMap::new(10, 20, 30);
         let y: TokenMap = TokenMap::new(10, 20, 30);
@@ -104,6 +122,24 @@ mod tests_array {
         pub eth: u64,
         pub btc: u64,
         pub secondary: [u64; 2],
+    }
+
+    #[test]
+    fn test_is_zero_false() {
+        let x: TokenMap = TokenMap::new(10, 20, 30, [1, 2]);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_partially_false() {
+        let x: TokenMap = TokenMap::new(10, 0, 0, [0, 0]);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_true() {
+        let x: TokenMap = TokenMap::new(0, 0, 0, [0, 0]);
+        assert_eq!(x.is_zero(), true);
     }
 
     #[test]
@@ -212,6 +248,24 @@ mod tests_reserved {
     }
 
     #[test]
+    fn test_is_zero_false() {
+        let x: TokenMap = TokenMap::new(10, 20, 30);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_partially_false() {
+        let x: TokenMap = TokenMap::new(10, 0, 0);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_true() {
+        let x: TokenMap = TokenMap::new(0, 0, 0);
+        assert_eq!(x.is_zero(), true);
+    }
+
+    #[test]
     fn test_add() {
         let x: TokenMap = TokenMap::new(10, 20, 30);
         let y: TokenMap = TokenMap::new(10, 20, 30);
@@ -300,6 +354,24 @@ mod tests_multiple_scenarios {
         pub tk1: [u64; 2],
         pub _reserved: [u8; 128],
         pub tk2: [u128; 3],
+    }
+
+    #[test]
+    fn test_is_zero_false() {
+        let x: TokenMap = TokenMap::new(10, 20, 30, [1, 2], [3, 4, 5]);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_partially_false() {
+        let x: TokenMap = TokenMap::new(10, 0, 0, [0, 2], [3, 0, 0]);
+        assert_eq!(x.is_zero(), false);
+    }
+
+    #[test]
+    fn test_is_zero_true() {
+        let x: TokenMap = TokenMap::new(0, 0, 0, [0, 0], [0, 0, 0]);
+        assert_eq!(x.is_zero(), true);
     }
 
     #[test]

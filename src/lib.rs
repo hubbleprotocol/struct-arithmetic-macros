@@ -31,6 +31,20 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
                 None
             }
         }
+        Type::Array(arr) => match &(*arr.elem) {
+            Type::Path(TypePath {
+                path: Path { segments, .. },
+                ..
+            }) => {
+                if let Some(path_seg) = segments.first() {
+                    let ident: &proc_macro2::Ident = &path_seg.ident;
+                    Some(ident.to_string())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        },
         _ => None,
     }
     .unwrap();
