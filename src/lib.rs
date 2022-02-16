@@ -50,7 +50,7 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
     let (multiplication_scalar, multiplication_scalar_array) =
         generate_mul_scalar(&fields, factor.clone());
     let (multiplication_fraction, multiplication_fraction_array) =
-        generate_mul_fraction(&fields, numerator, denominator, fields_type.clone());
+        generate_mul_fraction(&fields, numerator, denominator);
 
     let (new_constructor_args, new_constructor_struct) = generate_new(&fields);
     let is_zero = generate_is_zero(&fields);
@@ -505,7 +505,6 @@ fn generate_mul_fraction(
     fields: &Punctuated<Field, Comma>,
     numerator: Ident,
     denominator: Ident,
-    fields_type: Ident,
 ) -> (
     impl Iterator<Item = proc_macro2::TokenStream> + '_,
     impl Iterator<Item = proc_macro2::TokenStream> + '_,
@@ -539,7 +538,25 @@ fn generate_mul_fraction(
         }
         match &field.ty {
             Type::Array(_arr) => quote! { #field_ident, },
-            _ => quote! { ((self.#field_ident as u128).checked_mul(#numerator2 as u128)?.checked_div(#denominator2 as u128)?) as #fields_type, },
+            _ => {
+                let s = match &field.ty {
+                    Type::Path(TypePath {
+                        path: Path { segments, .. },
+                        ..
+                    }) => {
+                        if let Some(path_seg) = segments.first() {
+                            let ident: &proc_macro2::Ident = &path_seg.ident;
+                            Some(ident.to_string())
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                }.unwrap();
+                let field_type = Ident::new(&s, Span::call_site());
+                quote! {
+                ((self.#field_ident as u128).checked_mul(#numerator2 as u128)?.checked_div(#denominator2 as u128)?) as #field_type, }
+            },
         }
     });
 
