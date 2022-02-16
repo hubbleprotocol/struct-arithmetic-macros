@@ -108,6 +108,7 @@ struct TokenMap {
     pub btc: u64,
     pub tk1: [u64; 2],
     pub _reserved: [u8; 128],
+    pub _reserved2: [u8; 256],
     pub tk2: [u128; 3],
 }
 
@@ -119,6 +120,7 @@ impl TokenMap {
             btc,
             tk1,
             _reserved: [0; 128],
+            _reserved2: [0; 256],
             tk2,
         }
     }

@@ -168,7 +168,12 @@ fn generate_is_zero<'a>(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -208,7 +213,7 @@ fn generate_new(
     let args_code = fields.iter().enumerate().map(move |(i, field)| {
         let field_ident = field.ident.as_ref().unwrap();
         let field_type = &field.ty;
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         if i < fields.len() - 1 {
@@ -219,12 +224,12 @@ fn generate_new(
     });
     let struct_code = fields.iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             let reserved_len = match &field.ty {
                 Type::Array(arr) => &arr.len,
                 _ => panic!("_reserved can only be an array"),
             };
-            return quote! { _reserved: [0; #reserved_len], };
+            return quote! { #field_ident: [0; #reserved_len], };
         }
         return quote! { #field_ident, };
     });
@@ -241,7 +246,12 @@ fn generate_add(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -259,7 +269,7 @@ fn generate_add(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -276,7 +286,7 @@ fn generate_add_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -301,7 +311,12 @@ fn generate_sub(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -319,7 +334,7 @@ fn generate_sub(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -336,7 +351,7 @@ fn generate_sub_assign(
 ) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
     let code = fields.iter().map(|field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -361,7 +376,12 @@ fn generate_mul(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -379,7 +399,7 @@ fn generate_mul(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -401,7 +421,12 @@ fn generate_div(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -419,7 +444,7 @@ fn generate_div(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -443,7 +468,12 @@ fn generate_div_scalar(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -461,7 +491,7 @@ fn generate_div_scalar(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -485,7 +515,12 @@ fn generate_mul_scalar(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) => !field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -503,7 +538,7 @@ fn generate_mul_scalar(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
@@ -529,7 +564,12 @@ fn generate_mul_fraction(
         .into_iter()
         .enumerate()
         .filter(|(_i, field)| match &field.ty {
-            Type::Array(_arr) => field.ident.as_ref().unwrap() != "_reserved",
+            Type::Array(_arr) =>!field
+                .ident
+                .as_ref()
+                .unwrap()
+                .to_string()
+                .starts_with("_reserved"),
             _ => false,
         })
         .map(move |(_i, field)| {
@@ -547,7 +587,7 @@ fn generate_mul_fraction(
         });
     let code = fields.into_iter().map(move |field| {
         let field_ident = field.ident.as_ref().unwrap();
-        if field_ident == "_reserved" {
+        if field_ident.to_string().starts_with("_reserved") {
             return quote! {};
         }
         match &field.ty {
