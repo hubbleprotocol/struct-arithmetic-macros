@@ -3,7 +3,7 @@ name = "struct-arithmetic"
 description = "Provides a Trait to derive basic arithmetic operations for your structs."
 repository = "https://github.com/hubble-markets/struct-arithmetic-macros"
 license = "MIT"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2018"
 
 [features]
