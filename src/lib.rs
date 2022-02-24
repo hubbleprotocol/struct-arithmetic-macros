@@ -148,6 +148,9 @@ pub fn struct_arithmetic(tokens: TokenStream) -> TokenStream {
                 self.mul_fraction(factor as #fields_type, 10_000)
             }
 
+            pub fn mul_bps_u64(&self, factor: u64) -> Option<#name> {
+                self.mul_fraction(factor as #fields_type, 10_000)
+            }
 
             pub fn mul_percent(&self, factor: u16) -> Option<#name> {
                 self.mul_fraction(factor as #fields_type, 100)
